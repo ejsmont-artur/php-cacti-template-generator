@@ -2,10 +2,22 @@
 
 namespace Ejsmont\Artur\Cacti\TemplateGenerator;
 
+/**
+ * Simple class that allows you to generate cacti input methods, data templates and graph templates.
+ * All you have to do is create a assoc array with declaration of inputs/graphs and pass it into generateXml.
+ * 
+ * XML create is ready for import, you may need cacti 0.8.8 but if you changed version constant it should 
+ * let you generate older templates as i dont think they change that much (did not test though).
+ * 
+ * License: You are free to use this code for any purpose, but if you redistribute please include original link and author.
+ * @link http://artur.ejsmont.org/blog/content/cacti-graphs-generator-class-for-custom-metrics-import
+ * @author Artur Ejsmont
+ * @since 2012-11-25 
+ */
 class Generator {
     // data types
 
-    const DATA_SOURCE_TYPE_GAUGE = 1; // cauge is a value like percent, temperature etc, you measure current value
+    const DATA_SOURCE_TYPE_GAUGE = 1; // gauge is a value like percent, temperature etc, you measure current value
     const DATA_SOURCE_TYPE_COUNTER = 2; // for always increasing values
     const DATA_SOURCE_TYPE_DERIVE = 3; //  for always increasing values but handles decrease like value reset or overflow
     const DATA_SOURCE_TYPE_ABSOLUTE = 4; // ?
@@ -45,7 +57,8 @@ class Generator {
     const C_PURPLE_E = "784890";
 
     // ===============================================================================================================
-    // each xml node type has different prefix then CACTI_HASH_PREFIX then unique md5 - you should not have to edit it
+    // each xml node type has a different prefix then CACTI_HASH_PREFIX then unique md5 - you should not have to edit it
+    // these constants are copied from cacti global arrays file to be able to generate hashes
     private $hash_type_codes = array(
         "round_robin_archive" => "15",
         "cdef" => "05",
@@ -67,6 +80,14 @@ class Generator {
 
     // ================================================================================================================
 
+    /**
+     * The only method you need to call.
+     *
+     * @param array $def assoc array with declaration of inputs and graphs you want
+     * @throws Exception on errors i thorw exceptions when possible
+     * 
+     * @return string Generated XML
+     */
     public function generateXml($def) {
         $seed = microtime(true) . ' ' . mt_rand(1, 10000000);
 
@@ -169,6 +190,13 @@ class Generator {
         return $this->renderFile("template-ds.php", $def);
     }
 
+    /**
+     * Renders partial xml fragment from template file by populating variables.
+     * 
+     * @param string $templatePath template name
+     * @param array $vars assoc array of variables pushed into the template's scope
+     * @return string rendered fragment
+     */
     private function renderFile($templatePath, $vars) {
         // define all vars in local scope
         foreach ($vars as $name => $value) {
@@ -181,6 +209,13 @@ class Generator {
         return ob_get_clean();
     }
 
+    /**
+     * Generates hash for xml node by type. Cacti XML needs particular hashes that include node type and version.
+     * 
+     * @param string $type type of the node from the $hash_type_codes array
+     * @param string $string any data used to create the hash
+     * @return string hash
+     */
     private function getHash($type, $string) {
         return 'hash_' . $this->hash_type_codes[$type] . self::CACTI_HASH_PREFIX . md5($string);
     }
